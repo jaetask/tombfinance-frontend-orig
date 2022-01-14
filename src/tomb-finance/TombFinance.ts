@@ -5,7 +5,7 @@ import { Configuration } from './config';
 import { ContractName, TokenStat, AllocationTime, LPStat, Bank, PoolStats, TShareSwapperStat } from './types';
 import { BigNumber, Contract, ethers, EventFilter } from 'ethers';
 import { decimalToBalance } from './ether-utils';
-import { TransactionResponse } from '@ethersproject/providers';
+import { TransactionResponse, Provider } from '@ethersproject/providers';
 import ERC20 from './ERC20';
 import { getFullDisplayBalance, getDisplayBalance } from '../utils/formatBalance';
 import { getDefaultProvider } from '../utils/provider';
@@ -14,6 +14,11 @@ import config, { bankDefinitions } from '../config';
 import moment from 'moment';
 import { parseUnits } from 'ethers/lib/utils';
 import { FTM_TICKER, SPOOKY_ROUTER_ADDR, TOMB_TICKER } from '../utils/constants';
+
+import { Signer } from '@ethersproject/abstract-signer';
+
+
+
 /**
  * An API module of Tomb Finance contracts.
  * All contract-interacting domain logic should be defined in here.
@@ -21,7 +26,7 @@ import { FTM_TICKER, SPOOKY_ROUTER_ADDR, TOMB_TICKER } from '../utils/constants'
 export class TombFinance {
   myAccount: string;
   provider: ethers.providers.Web3Provider;
-  signer?: ethers.Signer;
+  signer?: ethers.providers.Provider | ethers.Signer;
   config: Configuration;
   contracts: { [name: string]: Contract };
   externalTokens: { [name: string]: ERC20 };
@@ -71,6 +76,7 @@ export class TombFinance {
     }
     const tokens = [this.TOMB, this.TSHARE, this.TBOND, ...Object.values(this.externalTokens)];
     for (const token of tokens) {
+      // @ts-ignore
       token.connect(this.signer);
     }
     this.TOMBWFTM_LP = this.TOMBWFTM_LP.connect(this.signer);
@@ -510,7 +516,9 @@ export class TombFinance {
 
     const { WFTM } = this.externalTokens;
 
+    // @ts-ignore
     const wftm = new TokenSpirit(chainId, WFTM.address, WFTM.decimal);
+    // @ts-ignore
     const token = new TokenSpirit(chainId, tokenContract.address, tokenContract.decimal, tokenContract.symbol);
     try {
       const wftmToToken = await FetcherSpirit.fetchPairData(wftm, token, this.provider);
